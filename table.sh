@@ -24,6 +24,15 @@ function cleanup() {
 }
 
 #####################################
+# MATH
+#####################################
+
+function divide() {
+  awk "BEGIN {print $1 / $2}"
+}
+
+
+#####################################
 # FACES
 #####################################
 
@@ -42,12 +51,26 @@ cols=$(tput cols)
 rows=$(tput lines)
 middleY=$(($rows / 2))
 middleX=$(($cols / 2))
-delay=0.05
+fps=${1:-"60"} # fps is first arg, defaulting to 60
+delay=$(divide 1 $fps)
 
 
 #####################################
 # MOVEMENT
 #####################################
+
+function enterLeft() {
+  local actor="$1"
+  local y=${2:-"$middleY"}
+  local waitFor=${3:-"$delay"}
+  local drawn=1
+  while [ "$drawn" -le ${#actor} ]; do
+    tput cup $y 0
+    echo "${actor: ((0 - $drawn))}"
+    ((drawn++))
+    sleep $waitFor
+  done
+}
 
 function moveRight() {
   local actor="$1"
@@ -86,6 +109,7 @@ function exitRight() {
 #####################################
 
 setup
+enterLeft "$faceRight"
 moveRight "$faceRight"
 exitRight "$faceRight"
 
