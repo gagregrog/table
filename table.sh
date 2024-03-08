@@ -64,7 +64,7 @@ function enterLeft() {
   local y=${2:-"$middleY"}
   local waitFor=${3:-"$delay"}
   local drawn=1
-  while [ "$drawn" -le ${#actor} ]; do
+  while [ "$drawn" -le $((${#actor} - 1)) ]; do
     tput cup $y 0
     echo "${actor: ((0 - $drawn))}"
     ((drawn++))
@@ -79,10 +79,16 @@ function moveRight() {
   local y=${4:-"$middleY"}
   local waitFor=${5:-"$delay"}
   local x="$from"
-  local toActual=$(($to - ${#actor} - 1))
+  local toActual=$(($to - ${#actor}))
+  local spacer=""
   while [ "$x" -le "$toActual" ]; do
-    tput cup $y $x
-    echo " $actor"
+    if [ "$x" -eq "0" ]; then
+      tput cup $y $x
+    else
+      tput cup $y $((x - 1))
+      spacer=" "
+    fi
+    echo "$spacer$actor"
     ((x++))
     sleep $waitFor
   done
@@ -103,7 +109,7 @@ function exitRight() {
   done
 }
 
-function marquee() {
+function scanRight() {
   local actor="$1"
   local y=${2:-"$middleY"}
   local waitFor=${3:-"$delay"}
@@ -112,13 +118,72 @@ function marquee() {
   exitRight "$actor" $y $waitFor
 }
 
+
+function enterRight() {
+  local actor="$1"
+  local y=${2:-"$middleY"}
+  local waitFor=${3:-"$delay"}
+  local drawn=1
+  while [ "$drawn" -lt ${#actor} ]; do
+    tput cup $y $((cols - drawn))
+    echo "${actor:0:drawn}"
+    ((drawn++))
+    sleep $waitFor
+  done
+}
+
+function moveLeft() {
+  local actor="$1"
+  local from=${2:-$((cols - ${#actor}))}
+  local to=${3:-"0"}
+  local y=${4:-"$middleY"}
+  local waitFor=${5:-"$delay"}
+  local x="$from"
+  local space=""
+  while [ "$x" -ge "$to" ]; do
+    tput cup $y $x
+    echo "$actor$space"
+    space=" "
+    ((x--))
+    sleep $waitFor
+  done
+}
+
+function exitLeft() {
+  local actor="$1"
+  local y=${2:-"$middleY"}
+  local waitFor=${3:-"$delay"}
+  local remaining=$((${#actor} - 1))
+  while [ "$remaining" -ge "0" ]; do
+    tput cup $y 0
+    if [ "$remaining" -eq "0" ]; then
+      echo " "
+    else
+      echo "${actor: ((0 - remaining))} "
+    fi
+    ((remaining--))
+    sleep $waitFor
+  done
+}
+
+function scanLeft() {
+  local actor="$1"
+  local y=${2:-"$middleY"}
+  local waitFor=${3:-"$delay"}
+  enterRight "$actor" $y $waitFor
+  moveLeft "$actor" $((cols - ${#actor})) 0 $y $waitFor
+  exitLeft "$actor" $y $waitFor
+}
+
+
 #####################################
 # MAIN
 #####################################
 
 setup
-marquee "$faceRight"
-
+scanRight "$faceRight"
+sleep 0.25
+scanLeft "$faceLeft"
 #
 #
 #
