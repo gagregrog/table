@@ -177,14 +177,32 @@ function scanLeft() {
 
 
 #####################################
+# SCENES
+#####################################
+
+function scan() {
+  local actorRight=${1:-"$faceRight"}
+  local actorLeft=${2:-"$faceLeft"}
+  local waitFor=${3:-"$delay"}
+  local row=0
+  while [ "$row" -le "$rows" ]; do
+    if [ $((row % 2)) -eq "0" ]; then
+      scanRight "$actorRight" $row $waitFor
+    else
+      scanLeft "$actorLeft" $row $waitFor
+    fi
+    ((row++))
+    sleep $waitFor
+  done
+}
+
+
+#####################################
 # MAIN
 #####################################
 
 setup
-scanRight "$faceRight"
-sleep 0.25
-scanLeft "$faceLeft"
-#
+scan
 #
 #
 #
