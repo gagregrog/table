@@ -1,0 +1,5 @@
+# Table
+
+```sh
+./table.sh
+```
