@@ -103,15 +103,21 @@ function exitRight() {
   done
 }
 
+function marquee() {
+  local actor="$1"
+  local y=${2:-"$middleY"}
+  local waitFor=${3:-"$delay"}
+  enterLeft "$actor" $y $waitFor
+  moveRight "$actor" 0 $cols $y $waitFor
+  exitRight "$actor" $y $waitFor
+}
 
 #####################################
 # MAIN
 #####################################
 
 setup
-enterLeft "$faceRight"
-moveRight "$faceRight"
-exitRight "$faceRight"
+marquee "$faceRight"
 
 #
 #
