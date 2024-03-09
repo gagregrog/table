@@ -2,6 +2,34 @@
 
 set -euo pipefail
 
+
+#####################################
+# CLI ARGS
+#####################################
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --fps)
+      fps="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -s|--scan)
+      SCAN=true
+      shift # past argument
+      ;;
+    -h|--help)
+      HELP=true
+      shift # past argument
+      ;;
+    *)
+      echo Unknown argument: $1
+      exit 1
+      ;;
+  esac
+done
+
+
 #####################################
 # SETUP / TEARDOWN
 #####################################
@@ -17,18 +45,12 @@ function setup() {
 trap cleanup 1 2 3 6 EXIT # replace screen on exit
 
 function cleanup() {
-  tput rmcup # replace screen
-  tput cnorm # show cursor
-  stty ${stty_orig} # enable normal keypress echo
+  if [[ -z $HELP ]]; then
+    tput rmcup # replace screen
+    tput cnorm # show cursor
+    stty ${stty_orig} # enable normal keypress echo
+  fi
   exit
-}
-
-#####################################
-# MATH
-#####################################
-
-function divide() {
-  awk "BEGIN {print $1 / $2}"
 }
 
 
@@ -44,6 +66,15 @@ table="┬─┬"
 
 
 #####################################
+# MATH
+#####################################
+
+function divide() {
+  awk "BEGIN {print $1 / $2}"
+}
+
+
+#####################################
 # DEFAULTS / CONSTANTS
 #####################################
 
@@ -51,8 +82,21 @@ cols=$(tput cols)
 rows=$(tput lines)
 middleY=$(($rows / 2))
 middleX=$(($cols / 2))
-fps=${1:-"60"} # fps is first arg, defaulting to 60
+fps=${fps:-"60"}
 delay=$(divide 1 $fps)
+
+
+#####################################
+# HELP
+#####################################
+
+function help() {
+cat << EOF
+#####################################
+# table.sh            $flipTable
+#####################################
+EOF
+}
 
 
 #####################################
@@ -201,8 +245,17 @@ function scan() {
 # MAIN
 #####################################
 
+if [[ -n $HELP ]]; then
+  help
+  exit 0
+fi
+
 setup
-scan
+
+if [[ -n $SCAN ]]; then
+  scan
+fi
+
 #
 #
 #
