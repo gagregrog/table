@@ -65,8 +65,8 @@ function cleanup() {
 
 faceRight="( °□°)"
 faceLeft="(°□° )"
-flipTable="(╯°□°）╯︵ ┻━┻"
-fixTable="┬─┬ノ( º _ ºノ)"
+flipTableRight="(╯°□°）╯︵ ┻━┻"
+fixTableLeft="┬─┬ノ( º _ ºノ)"
 table="┬─┬"
 
 
@@ -109,7 +109,7 @@ delay=$(divide 1 $fps)
 function help() {
 cat << EOF
 #####################################
-# table.sh            $flipTable
+# table.sh            $flipTableRight
 #####################################
 EOF
 }
@@ -257,7 +257,30 @@ function scan() {
 }
 
 function flip() {
-  exit
+  local tableStart=$(getCenterStart $table)
+  local eyeSleep=1
+  tput cup $middleY $tableStart
+  echo $table
+  enterLeft "$faceRight"
+  moveRight "$faceRight" 0 $tableStart
+  local actorStart=$((tableStart - ${#faceRight}))
+  sleep $eyeSleep
+  tput cup $middleY $actorStart
+  echo $faceLeft
+  sleep $eyeSleep
+  tput cup $middleY $actorStart
+  echo $faceRight
+  sleep $eyeSleep
+  tput cup $middleY $actorStart
+  echo $flipTableRight
+  sleep 0.1
+  tput cup $middleY $((actorStart + 8))
+  echo " " # cleanup the little ︵
+  sleep 0.5
+  tput cup $middleY $actorStart
+  echo "           " # cleanup the arms
+  moveLeft "$faceLeft" $actorStart 0
+  exitLeft
 }
 
 
