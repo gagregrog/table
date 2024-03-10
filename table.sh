@@ -1,6 +1,40 @@
-#~/usr/bin/env bash
+#!/usr/bin/env bash
+
+#####################################
+# SETUP / TEARDOWN
+#####################################
 
 set -euo pipefail
+stty_orig=$(stty -g) # capture the original keypress settings
+
+function setup() {
+  tput civis # invisible cursor
+  tput smcup # save screen
+  stty -echo # hide user input
+}
+
+trap cleanup 1 2 3 6 EXIT 
+
+function cleanup() {
+  if [ $SCENE != "help" ]; then
+    tput rmcup # replace screen
+    tput cnorm # show cursor
+    stty ${stty_orig} # enable normal keypress echo
+  fi
+  exit
+}
+
+
+#####################################
+# DEFAULT PARTS
+#####################################
+
+EYE="°"
+MOUTH="□"
+CHEEK_LEFT="("
+CHEEK_RIGHT=")"
+FLIP_ARM="╯"
+FLIP_MOTION="︵"
 
 
 #####################################
@@ -36,38 +70,17 @@ done
 
 
 #####################################
-# SETUP / TEARDOWN
-#####################################
-
-stty_orig=$(stty -g) # capture the original keypress settings
-
-function setup() {
-  tput civis # invisible cursor
-  tput smcup # save screen
-  stty -echo # hide user input
-}
-
-trap cleanup 1 2 3 6 EXIT # replace screen on exit
-
-function cleanup() {
-  if [ $SCENE != "help" ]; then
-    tput rmcup # replace screen
-    tput cnorm # show cursor
-    stty ${stty_orig} # enable normal keypress echo
-  fi
-  exit
-}
-
-
-#####################################
 # FACES
 #####################################
+face="$CHEEK_LEFT$EYE$MOUTH$EYE$CHEEK_RIGHT"
+faceRight="$CHEEK_LEFT ${face:${#CHEEK_LEFT}}"
+faceLeft="${face%%$CHEEK_RIGHT*} $CHEEK_RIGHT"
 
-faceRight="( °□°)"
-faceLeft="(°□° )"
-flipTableRight="(╯°□°）╯︵ ┻━┻"
-fixTableLeft="┬─┬ノ( º _ ºノ)"
 table="┬─┬"
+tableFlipped="┻━┻"
+
+faceRightArms="$CHEEK_LEFT$FLIP_ARM${face:${#CHEEK_LEFT}} $FLIP_ARM"
+flipTableRight="$faceRightArms$FLIP_MOTION$tableFlipped"
 
 
 #####################################
@@ -91,7 +104,7 @@ function getCenterStart() {
 
 
 #####################################
-# DEFAULTS / CONSTANTS
+# DEFAULTS / GLOBALS
 #####################################
 
 cols=$(tput cols)
@@ -110,7 +123,7 @@ function help() {
 cat << EOF
 
 ####################################################
-# table.sh                           $flipTableRight
+# table.sh                             $flipTableRight
 ####################################################
 
 Everybody's favorite table flipper, lightly animated
@@ -287,7 +300,7 @@ function flip() {
   echo " " # cleanup the little ︵
   sleep 0.5
   tput cup $middleY $actorStart
-  echo "           " # cleanup the arms
+  echo "          " # cleanup the arms
   moveLeft "$faceLeft" $actorStart 0
   exitLeft "$faceLeft"
 }
