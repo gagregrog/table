@@ -7,6 +7,7 @@ set -euo pipefail
 # CLI ARGS
 #####################################
 
+SCENE=flip
 while [[ $# -gt 0 ]]; do
   case $1 in
     --fps)
@@ -15,11 +16,15 @@ while [[ $# -gt 0 ]]; do
       shift # past value
       ;;
     -s|--scan)
-      SCAN=true
+      SCENE=scan
+      shift # past argument
+      ;;
+    -f|--flip)
+      SCENE=flip
       shift # past argument
       ;;
     -h|--help)
-      HELP=true
+      SCENE=help
       shift # past argument
       ;;
     *)
@@ -45,7 +50,7 @@ function setup() {
 trap cleanup 1 2 3 6 EXIT # replace screen on exit
 
 function cleanup() {
-  if [[ -z $HELP ]]; then
+  if [ $SCENE != "help" ]; then
     tput rmcup # replace screen
     tput cnorm # show cursor
     stty ${stty_orig} # enable normal keypress echo
@@ -71,6 +76,17 @@ table="┬─┬"
 
 function divide() {
   awk "BEGIN {print $1 / $2}"
+}
+
+function getCenterStart() {
+  local item="$1"
+  local itemLength=${#item}
+  local center=$((cols / 2))
+  if [ $((center % 2)) -eq 1 ]; then
+    ((center++))
+  fi
+  local halfLength=$((itemLength / 2))
+  echo $((center - halfLength))
 }
 
 
@@ -240,22 +256,34 @@ function scan() {
   done
 }
 
+function flip() {
+  exit
+}
+
 
 #####################################
 # MAIN
 #####################################
 
-if [[ -n $HELP ]]; then
-  help
-  exit 0
+if [ $SCENE != "help" ]; then
+  setup
 fi
 
-setup
-
-if [[ -n $SCAN ]]; then
-  scan
-fi
-
+case $SCENE in
+  help)
+    help
+    ;;
+  scan)
+    scan
+    ;;
+  flip)
+    flip
+    ;;
+  *)
+    echo Unknown scene: $SCENE
+    exit 1
+    ;;
+esac
 #
 #
 #
