@@ -108,9 +108,18 @@ delay=$(divide 1 $fps)
 
 function help() {
 cat << EOF
-#####################################
-# table.sh            $flipTableRight
-#####################################
+
+####################################################
+# table.sh                           $flipTableRight
+####################################################
+
+Everybody's favorite table flipper, lightly animated
+
+Options:
+  --fps [value]         running speed
+  --flip                run the flip scene (default)
+  --scan                run the scan scene
+  -h, --help            display this help
 EOF
 }
 
