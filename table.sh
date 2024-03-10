@@ -280,7 +280,7 @@ function flip() {
   tput cup $middleY $actorStart
   echo "           " # cleanup the arms
   moveLeft "$faceLeft" $actorStart 0
-  exitLeft
+  exitLeft "$faceLeft"
 }
 
 
