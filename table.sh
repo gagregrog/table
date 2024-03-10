@@ -34,7 +34,7 @@ MOUTH="□"
 CHEEK_LEFT="("
 CHEEK_RIGHT=")"
 FLIP_ARM="╯"
-FLIP_MOTION="︵"
+MOTION="︵"
 
 
 #####################################
@@ -44,17 +44,48 @@ FLIP_MOTION="︵"
 SCENE=flip
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --fps)
+    -f|--fps)
       fps="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -e|--eye)
+      EYE=$2
+      shift # past argument
+      shift # past value
+      ;;
+    -m|--mouth)
+      MOUTH=$2
+      shift # past argument
+      shift # past value
+      ;;
+    -cl|--cheek-left)
+      CHEEK_LEFT=$2
+      shift # past argument
+      shift # past value
+      ;;
+    -cr|--cheek-right)
+      CHEEK_RIGHT=$2
+      shift # past argument
+      shift # past value
+      ;;
+    -a|--arm)
+      FLIP_ARM=$2
+      shift # past argument
+      shift # past value
+      ;;
+    -M|--motion)
+      MOTION=$2
+      shift # past argument
+      shift # past value
+      ;;
+    -t|--table-length)
+      TABLE_LENGTH=$2
       shift # past argument
       shift # past value
       ;;
     -s|--scan)
       SCENE=scan
-      shift # past argument
-      ;;
-    -f|--flip)
-      SCENE=flip
       shift # past argument
       ;;
     -h|--help)
@@ -70,24 +101,28 @@ done
 
 
 #####################################
-# FACES
+# STRING UTILS
 #####################################
-face="$CHEEK_LEFT$EYE$MOUTH$EYE$CHEEK_RIGHT"
-faceRight="$CHEEK_LEFT ${face:${#CHEEK_LEFT}}"
-faceLeft="${face%%$CHEEK_RIGHT*} $CHEEK_RIGHT"
 
-table="┬─┬"
-tableFlipped="┻━┻"
+function makeString() {
+  local char=$1
+  local targetLength=$2
+  local acc=""
+  for ((i=0; i < ${targetLength}; i++)); do
+    acc="$acc$char"
+  done
 
-faceRightArms="$CHEEK_LEFT$FLIP_ARM${face:${#CHEEK_LEFT}} $FLIP_ARM"
-flipTableRight="$faceRightArms$FLIP_MOTION$tableFlipped"
+  echo "$acc"
+}
 
 
 #####################################
-# MATH
+# MATH UTILS
 #####################################
 
 function divide() {
+  # rather than (($1 / $2)) which only supports integer results
+  # awk division will return decimal results
   awk "BEGIN {print $1 / $2}"
 }
 
@@ -101,6 +136,35 @@ function getCenterStart() {
   local halfLength=$((itemLength / 2))
   echo $((center - halfLength))
 }
+
+
+#####################################
+# FACES
+#####################################
+
+face="$CHEEK_LEFT$EYE$MOUTH$EYE$CHEEK_RIGHT"
+faceRight="$CHEEK_LEFT ${face:${#CHEEK_LEFT}}"
+faceLeft="${face%%$CHEEK_RIGHT*} $CHEEK_RIGHT"
+
+
+#####################################
+# TABLE
+#####################################
+
+tableLength=${TABLE_LENGTH:-"1"}
+
+tableEndChar="┬"
+tableMiddleChar="─"
+tableMiddle=$(makeString "$tableMiddleChar" $tableLength)
+table="$tableEndChar$tableMiddle$tableEndChar"
+
+flippedTableEndChar="┻"
+flippedTableMiddleChar="─"
+flippedTableMiddle=$(makeString "$flippedTableMiddleChar" $tableLength)
+tableFlipped="$flippedTableEndChar$flippedTableMiddle$flippedTableEndChar"
+
+faceRightArms="$CHEEK_LEFT$FLIP_ARM${face:${#CHEEK_LEFT}} $FLIP_ARM"
+flipTableRight="$faceRightArms$MOTION$tableFlipped"
 
 
 #####################################
@@ -122,17 +186,30 @@ delay=$(divide 1 $fps)
 function help() {
 cat << EOF
 
-####################################################
-# table.sh                             $flipTableRight
-####################################################
+############################################################################
+# table.sh                                                     $flipTableRight
+############################################################################
 
 Everybody's favorite table flipper, lightly animated
 
 Options:
-  --fps [value]         running speed
-  --flip                run the flip scene (default)
-  --scan                run the scan scene
-  -h, --help            display this help
+  -f, --fps [int]                      change the running speed (default 60)
+  -h, --help                           display this help
+
+Character Options:
+  -e, --eye [char(s)]                  customize flip's eyes
+  -m, --mouth [char(s)]                customize flip's mouth
+  -cl, --cheek-left [char(s)]          customize flip's left cheek
+  -cr, --cheek-right [char(s)]         customize flip's right cheek
+  -a, --arm [char(s)]                  customize flip's flippin' arms
+  -M, --motion [char(s)]               customize the table flippin' motion
+
+Table Options:
+  -t, --table-length [int]             change the length of the table
+
+Scene Options:
+  [default]                            run the table flip scene
+  --scan                               run the scan scene
 EOF
 }
 
@@ -296,11 +373,13 @@ function flip() {
   tput cup $middleY $actorStart
   echo $flipTableRight
   sleep 0.1
-  tput cup $middleY $((actorStart + 8))
-  echo " " # cleanup the little ︵
+  tput cup $middleY $((actorStart + ${#faceRightArms}))
+  local motionCleanup=$(echo "$MOTION" | sed 's/./ /g')
+  echo "$motionCleanup"
   sleep 0.5
+  local actorCleanup=$(echo "$faceRightArms" | sed 's/./ /g')
   tput cup $middleY $actorStart
-  echo "          " # cleanup the arms
+  echo "$actorCleanup"
   moveLeft "$faceLeft" $actorStart 0
   exitLeft "$faceLeft"
 }

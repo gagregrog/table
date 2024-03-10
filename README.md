@@ -20,17 +20,30 @@ chmod u+x table.sh
 
 ## Help
 
-```sh
-####################################################
-# table.sh                           (╯°□°）╯︵ ┻━┻
-####################################################
+```
+############################################################################
+# table.sh                                                     (╯°□°) ╯︵┻─┻
+############################################################################
 
 Everybody's favorite table flipper, lightly animated
 
 Options:
-  --fps [value]         running speed
-  --flip                run the flip scene (default)
-  --scan                run the scan scene
-  -h, --help            display this help
+  -f, --fps [int]                      change the running speed (default 60)
+  -h, --help                           display this help
+
+Character Options:
+  -e, --eye [char(s)]                  customize flip's eyes
+  -m, --mouth [char(s)]                customize flip's mouth
+  -cl, --cheek-left [char(s)]          customize flip's left cheek
+  -cr, --cheek-right [char(s)]         customize flip's right cheek
+  -a, --arm [char(s)]                  customize flip's flippin' arms
+  -M, --motion [char(s)]               customize the table flippin' motion
+
+Table Options:
+  -t, --table-length [int]             change the length of the table
+
+Scene Options:
+  [default]                            run the table flip scene
+  --scan                               run the scan scene
 ```
 
