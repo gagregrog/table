@@ -13,7 +13,8 @@ bash <(curl -s https://raw.githubusercontent.com/gagregrog/table/main/table.sh)
 Or, download and then run:
 
 ```sh
-curl https://raw.githubusercontent.com/gagregrog/table/main/table.sh > table.sh && chmod u+x table.sh
+curl https://raw.githubusercontent.com/gagregrog/table/main/table.sh > table.sh 
+chmod u+x table.sh
 ./table.sh
 ```
 
