@@ -16,12 +16,87 @@ function setup() {
 trap cleanup 1 2 3 6 EXIT 
 
 function cleanup() {
-  if [ $SCENE != "help" ]; then
+  scene=${SCENE:-""}
+  if [[ $scene != "help" ]]; then
     tput rmcup # replace screen
     tput cnorm # show cursor
     stty ${stty_orig} # enable normal keypress echo
   fi
   exit
+}
+
+
+#####################################
+# STRING UTILS
+#####################################
+
+function makeString() {
+  local char=$1
+  local targetLength=$2
+  local acc=""
+  for ((i=0; i < ${targetLength}; i++)); do
+    acc="$acc$char"
+  done
+
+  echo "$acc"
+}
+
+function contains() {
+  local LIST=$1
+  local VALUE=$2
+  local DELIMITER=${3:-" "}
+  [[ "$LIST" =~ ($DELIMITER|^)$VALUE($DELIMITER|$) ]]
+}
+
+function strlen() {
+  local doublewidth="︶"
+  local length=${#1}
+  for ((i = 0; i < ${#1}; i++)); do
+    local char="${1:i:1}"
+    if [[ "$doublewidth" == *"$char"* ]]; then
+      ((length++))
+    fi
+  done
+  echo $length
+}
+
+function repeat() {
+  local char=$1
+  local times=$2
+  local acc=""
+  for ((i = 0; i < $times; i++)); do
+    acc="$acc$char"
+  done
+
+  echo "$acc"
+}
+
+function empty() {
+  local source=$1
+  local length=$(strlen "$source")
+  repeat " " "$length"
+}
+
+
+#####################################
+# MATH UTILS
+#####################################
+
+function divide() {
+  # rather than (($1 / $2)) which only supports integer results
+  # awk division will return decimal results
+  awk "BEGIN {print $1 / $2}"
+}
+
+function getCenterStart() {
+  local item="$1"
+  local itemLength=$(strlen "$item")
+  local center=$((cols / 2))
+  if [ $((center % 2)) -eq 1 ]; then
+    ((center++))
+  fi
+  local halfLength=$((itemLength / 2))
+  echo $((center - halfLength))
 }
 
 
@@ -38,17 +113,76 @@ MOTION="︵"
 
 
 #####################################
+# ACTORS
+#####################################
+
+actors="burns diss jake pwny zen"
+
+function configureActor() {
+  case $1 in
+    burns)
+      EYE="◉"
+      MOUTH="Д"
+      FLIP_ARM="┛"
+      MOTION="彡"
+      ;;
+    diss)
+      EYE="ಥ"
+      MOUTH="_"
+      CHEEK_LEFT="«"
+      CHEEK_RIGHT="»"
+      ;;
+    jake)
+      EYE="❍"
+      MOUTH="ᴥ"
+      FLIP_ARM="┛"
+      MOTION="彡"
+      ;;
+    pwny)
+      EYE="⊙"
+      MOUTH="▂"
+      FLIP_ARM="✖"
+      ;;
+    zen)
+      EYE="︶"
+      MOUTH="_"
+      FLIP_ARM="╭∩╮"
+      ;;
+  esac
+}
+
+
+#####################################
 # CLI ARGS
 #####################################
 
 SCENE=flip
 while [[ $# -gt 0 ]]; do
   case $1 in
+    # options
     -f|--fps)
       fps="$2"
       shift # past argument
       shift # past value
       ;;
+    -h|--help)
+      SCENE=help
+      shift # past argument
+      ;;
+    # actors
+    -a|--actor)
+      ACTOR=$2
+      if ! contains "$actors" "$ACTOR"; then
+        echo Unknown actor: $ACTOR
+        echo Choose one of: $(echo $actors | sed 's/ /, /g')
+        exit 1
+      fi
+      configureActor $ACTOR
+
+      shift # past argument
+      shift # past value
+      ;;
+    # actor overrides
     -e|--eye)
       EYE=$2
       shift # past argument
@@ -79,19 +213,18 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
+    # table configuration
     -t|--table-length)
       TABLE_LENGTH=$2
       shift # past argument
       shift # past value
       ;;
+    # sceens
     -s|--scan)
       SCENE=scan
       shift # past argument
       ;;
-    -h|--help)
-      SCENE=help
-      shift # past argument
-      ;;
+    # uh-oh
     *)
       echo Unknown argument: $1
       exit 1
@@ -101,49 +234,11 @@ done
 
 
 #####################################
-# STRING UTILS
-#####################################
-
-function makeString() {
-  local char=$1
-  local targetLength=$2
-  local acc=""
-  for ((i=0; i < ${targetLength}; i++)); do
-    acc="$acc$char"
-  done
-
-  echo "$acc"
-}
-
-
-#####################################
-# MATH UTILS
-#####################################
-
-function divide() {
-  # rather than (($1 / $2)) which only supports integer results
-  # awk division will return decimal results
-  awk "BEGIN {print $1 / $2}"
-}
-
-function getCenterStart() {
-  local item="$1"
-  local itemLength=${#item}
-  local center=$((cols / 2))
-  if [ $((center % 2)) -eq 1 ]; then
-    ((center++))
-  fi
-  local halfLength=$((itemLength / 2))
-  echo $((center - halfLength))
-}
-
-
-#####################################
 # FACES
 #####################################
 
 face="$CHEEK_LEFT$EYE$MOUTH$EYE$CHEEK_RIGHT"
-faceRight="$CHEEK_LEFT ${face:${#CHEEK_LEFT}}"
+faceRight="$CHEEK_LEFT ${face:$(strlen "$CHEEK_LEFT")}"
 faceLeft="${face%%$CHEEK_RIGHT*} $CHEEK_RIGHT"
 
 
@@ -163,7 +258,7 @@ flippedTableMiddleChar="─"
 flippedTableMiddle=$(makeString "$flippedTableMiddleChar" $tableLength)
 tableFlipped="$flippedTableEndChar$flippedTableMiddle$flippedTableEndChar"
 
-faceRightArms="$CHEEK_LEFT$FLIP_ARM${face:${#CHEEK_LEFT}} $FLIP_ARM"
+faceRightArms="$CHEEK_LEFT$FLIP_ARM${face:$(strlen "$CHEEK_LEFT")} $FLIP_ARM"
 flipTableRight="$faceRightArms$MOTION$tableFlipped"
 
 
@@ -196,7 +291,11 @@ Options:
   -f, --fps           [int]            change the running speed (default 60)
   -h, --help                           display this help
 
-Character Options:
+Actors:
+  --actor             [actor]         choose a specific actor
+    actors: $(echo "$actors" | sed 's/ /, /g')
+
+Actor Options:
   -e,  --eye          [char(s)]        customize flip's eyes
   -m,  --mouth        [char(s)]        customize flip's mouth
   -cl, --cheek-left   [char(s)]        customize flip's left cheek
@@ -222,7 +321,7 @@ function enterLeft() {
   local y=${2:-"$middleY"}
   local waitFor=${3:-"$delay"}
   local drawn=1
-  while [ "$drawn" -le $((${#actor} - 1)) ]; do
+  while [ "$drawn" -le $(($(strlen "$actor") - 1)) ]; do
     tput cup $y 0
     echo "${actor: ((0 - $drawn))}"
     ((drawn++))
@@ -237,7 +336,7 @@ function moveRight() {
   local y=${4:-"$middleY"}
   local waitFor=${5:-"$delay"}
   local x="$from"
-  local toActual=$(($to - ${#actor}))
+  local toActual=$(($to - $(strlen "$actor")))
   local spacer=""
   while [ "$x" -le "$toActual" ]; do
     if [ "$x" -eq "0" ]; then
@@ -256,7 +355,7 @@ function exitRight() {
   local actor="$1"
   local y=${2:-"$middleY"}
   local waitFor=${3:-"$delay"}
-  local remaining=${#actor}
+  local remaining=$(strlen "$actor")
   local x=$(($cols - $remaining))
   while [ "$remaining" -gt "0" ]; do
     tput cup $y $x
@@ -282,7 +381,7 @@ function enterRight() {
   local y=${2:-"$middleY"}
   local waitFor=${3:-"$delay"}
   local drawn=1
-  while [ "$drawn" -lt ${#actor} ]; do
+  while [ "$drawn" -lt $(strlen "$actor") ]; do
     tput cup $y $((cols - drawn))
     echo "${actor:0:drawn}"
     ((drawn++))
@@ -292,7 +391,7 @@ function enterRight() {
 
 function moveLeft() {
   local actor="$1"
-  local from=${2:-$((cols - ${#actor}))}
+  local from=${2:-$((cols - $(strlen "$actor")))}
   local to=${3:-"0"}
   local y=${4:-"$middleY"}
   local waitFor=${5:-"$delay"}
@@ -311,7 +410,7 @@ function exitLeft() {
   local actor="$1"
   local y=${2:-"$middleY"}
   local waitFor=${3:-"$delay"}
-  local remaining=$((${#actor} - 1))
+  local remaining=$(($(strlen "$actor") - 1))
   while [ "$remaining" -ge "0" ]; do
     tput cup $y 0
     if [ "$remaining" -eq "0" ]; then
@@ -329,7 +428,7 @@ function scanLeft() {
   local y=${2:-"$middleY"}
   local waitFor=${3:-"$delay"}
   enterRight "$actor" $y $waitFor
-  moveLeft "$actor" $((cols - ${#actor})) 0 $y $waitFor
+  moveLeft "$actor" $((cols - $(strlen "$actor"))) 0 $y $waitFor
   exitLeft "$actor" $y $waitFor
 }
 
@@ -361,7 +460,7 @@ function flip() {
   echo $table
   enterLeft "$faceRight"
   moveRight "$faceRight" 0 $tableStart
-  local actorStart=$((tableStart - ${#faceRight}))
+  local actorStart=$((tableStart - $(strlen "$faceRight")))
   sleep $eyeSleep
   tput cup $middleY $actorStart
   echo $faceLeft
@@ -372,13 +471,11 @@ function flip() {
   tput cup $middleY $actorStart
   echo $flipTableRight
   sleep 0.1
-  tput cup $middleY $((actorStart + ${#faceRightArms}))
-  local motionCleanup=$(echo "$MOTION" | sed 's/./ /g')
-  echo "$motionCleanup"
+  tput cup $middleY $((actorStart + $(strlen "$faceRightArms")))
+  empty "$MOTION"
   sleep 0.5
-  local actorCleanup=$(echo "$faceRightArms" | sed 's/./ /g')
   tput cup $middleY $actorStart
-  echo "$actorCleanup"
+  empty "$faceRightArms"
   moveLeft "$faceLeft" $actorStart 0
   exitLeft "$faceLeft"
 }
@@ -400,13 +497,12 @@ case $SCENE in
     scan
     ;;
   flip)
-    flip
+    # flip
+    exitLeft "$faceLeft"
     ;;
   *)
     echo Unknown scene: $SCENE
     exit 1
     ;;
 esac
-#
-#
-#
+
