@@ -17,7 +17,7 @@ function setup() {
     tput civis # invisible cursor
     stty -echo # hide user input
     if [[ $SCENE != $CLEAR ]]; then
-      $tput smcup # save and hide screen
+      tput smcup # save and hide screen
     fi
   fi
 }
@@ -59,7 +59,6 @@ function contains() {
 }
 
 function strlen() {
-  local doublewidth="︶"
   local length=${#1}
   for ((i = 0; i < ${#1}; i++)); do
     local char="${1:i:1}"
@@ -133,9 +132,13 @@ BURNS=burns
 DISS=diss
 JAKE=jake
 PWNY=pwny
+RAGE=rage
+SCREAM=scream
 ZEN=zen
 
-actors="$BURNS $DISS $JAKE $PWNY $ZEN"
+actors="$BURNS $DISS $JAKE $PWNY $RAGE $SCREAM $ZEN"
+
+doublewidth="︶ ノ 益 ل͜"
 
 function configureActor() {
   case $1 in
@@ -157,10 +160,23 @@ function configureActor() {
       FLIP_ARM="┛"
       MOTION="彡"
       ;;
+    $SCREAM)
+      FLIP_ARM="╭o͡͡͡"
+      CHEEK_RIGHT=" ༽"
+      CHEEK_LEFT="༼"
+      EYE=" ʘ̆ "
+      MOUTH="۝"
+      ;;
     $PWNY)
       EYE="⊙"
       MOUTH="▂"
       FLIP_ARM="✖"
+      ;;
+    $RAGE)
+      EYE="ಠ"
+      MOUTH="益"
+      FLIP_ARM="ノ"
+      MOTION="彡"
       ;;
     $ZEN)
       EYE="︶"
@@ -338,7 +354,7 @@ Table Options:
 
 Scenes:
   -s, --scan                           like a printer...but not really
-  -c, --clear                          like shell clear, but better worse
+  -c, --clear                          like shell clear, but better (worse)
 EOF
 }
 
