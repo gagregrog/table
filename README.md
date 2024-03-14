@@ -18,11 +18,23 @@ chmod u+x table.sh
 ./table.sh
 ```
 
+Or, add it to your shell startup (.zshrc, .bashrc, etc):
+
+```sh
+if ! which table &> /dev/null; then
+  table=$(curl -sf https://raw.githubusercontent.com/gagregrog/table/main/table.sh)
+  if [[ $? -eq 0 ]]; then
+    echo $table > /usr/local/bin/table
+    chmod u+x /usr/local/bin/table
+  fi
+fi
+```
+
 ## Help
 
 ```
 ############################################################################
-# table.sh                                                    (╯°□°) ╯︵┻─┻
+# table.sh                                                     (╯°□°) ╯︵┻─┻
 ############################################################################
 
 Everybody's favorite table flipper, lightly animated
