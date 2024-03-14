@@ -7,9 +7,14 @@
 set -euo pipefail
 stty_orig=$(stty -g) # capture the original keypress settings
 
+SCAN=SCAN
+FLIP=FLIP
+HELP=HELP
+
 function setup() {
+  scene=${SCENE:-""}
   tput civis # invisible cursor
-  tput smcup # save screen
+  tput smcup # save and hide screen
   stty -echo # hide user input
 }
 
@@ -17,7 +22,7 @@ trap cleanup 1 2 3 6 EXIT
 
 function cleanup() {
   scene=${SCENE:-""}
-  if [[ $scene != "help" ]]; then
+  if [[ $scene != $HELP ]]; then
     tput rmcup # replace screen
     tput cnorm # show cursor
     stty ${stty_orig} # enable normal keypress echo
@@ -156,7 +161,7 @@ function configureActor() {
 # CLI ARGS
 #####################################
 
-SCENE=flip
+SCENE=$FLIP
 while [[ $# -gt 0 ]]; do
   case $1 in
     # options
@@ -166,7 +171,7 @@ while [[ $# -gt 0 ]]; do
       shift # past value
       ;;
     -h|--help)
-      SCENE=help
+      SCENE=$HELP
       shift # past argument
       ;;
     # actors
@@ -178,7 +183,6 @@ while [[ $# -gt 0 ]]; do
         exit 1
       fi
       configureActor $ACTOR
-
       shift # past argument
       shift # past value
       ;;
@@ -221,7 +225,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     # sceens
     -s|--scan)
-      SCENE=scan
+      SCENE=$SCAN
       shift # past argument
       ;;
     # uh-oh
@@ -483,18 +487,15 @@ function flip() {
 # MAIN
 #####################################
 
-if [ $SCENE != "help" ]; then
-  setup
-fi
-
+setup
 case $SCENE in
-  help)
+  $HELP)
     help
     ;;
-  scan)
+  $SCAN)
     scan
     ;;
-  flip)
+  $FLIP)
     flip
     ;;
   *)
