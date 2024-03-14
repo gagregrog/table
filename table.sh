@@ -320,11 +320,9 @@ function enterLeft() {
   local actor="$1"
   local y=${2:-"$middleY"}
   local waitFor=${3:-"$delay"}
-  local drawn=1
-  while [ "$drawn" -le $(($(strlen "$actor") - 1)) ]; do
+  for ((i=0; i < $((${#actor} - 1)); i++)); do
     tput cup $y 0
-    echo "${actor: ((0 - $drawn))}"
-    ((drawn++))
+    echo "${actor: ((0 - i - 1))}"
     sleep $waitFor
   done
 }
@@ -355,13 +353,15 @@ function exitRight() {
   local actor="$1"
   local y=${2:-"$middleY"}
   local waitFor=${3:-"$delay"}
-  local remaining=$(strlen "$actor")
-  local x=$(($cols - $remaining))
-  while [ "$remaining" -gt "0" ]; do
-    tput cup $y $x
-    echo " ${actor:0:((remaining - 1))}"
-    ((remaining--))
-    ((x++))
+  local length=${#actor}
+  local firstChar="${actor:0:1}"
+  local squeegie=$(empty "$firstChar")
+  local extraDisplayChars=$(($(strlen "$actor") - ${#actor}))
+  for ((i=0; i < $length; i++)); do
+    actor="${actor:0:$((length - i - 1))}"
+    local toDraw="$squeegie$actor"
+    tput cup $y $((cols - ${#toDraw} - $extraDisplayChars))
+    echo "$toDraw"
     sleep $waitFor
   done
 }
@@ -380,11 +380,11 @@ function enterRight() {
   local actor="$1"
   local y=${2:-"$middleY"}
   local waitFor=${3:-"$delay"}
-  local drawn=1
-  while [ "$drawn" -lt $(strlen "$actor") ]; do
-    tput cup $y $((cols - drawn))
-    echo "${actor:0:drawn}"
-    ((drawn++))
+  local length=${#actor}
+  for ((i=1; i < $length; i++)); do
+    local partial="${actor:0:$i}"
+    tput cup $y $((cols - $(strlen "$partial")))
+    echo "$partial"
     sleep $waitFor
   done
 }
@@ -410,9 +410,12 @@ function exitLeft() {
   local actor="$1"
   local y=${2:-"$middleY"}
   local waitFor=${3:-"$delay"}
-  for ((i = 0; i < "${#actor}"; i++)); do
+  local lastChar="${actor: -1}"
+  local squeegie=$(empty "$lastChar")
+  local length=${#actor}
+  for ((i = 0; i < "$length"; i++)); do
     tput cup $y 0
-    actor="${actor:1}$(empty "${actor: -1}")"
+    actor="${actor:1}$squeegie"
     echo "$actor"
     sleep $waitFor
   done
