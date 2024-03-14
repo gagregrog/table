@@ -34,7 +34,7 @@ Options:
 Actors:
   --actor             [actor]         choose a specific actor
 
-    actors: burns, diss, jake, pwny, rage, scream, zen
+    actors: bear, burns, diss, jake, pwny, rage, scream, zen
 
 Actor Options:
   -e,  --eye          [char(s)]        customize flip's eyes

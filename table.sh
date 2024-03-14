@@ -128,6 +128,7 @@ MOTION="︵"
 # ACTORS
 #####################################
 
+BEAR=bear
 BURNS=burns
 DISS=diss
 JAKE=jake
@@ -136,12 +137,19 @@ RAGE=rage
 SCREAM=scream
 ZEN=zen
 
-actors="$BURNS $DISS $JAKE $PWNY $RAGE $SCREAM $ZEN"
+actors="$BEAR $BURNS $DISS $JAKE $PWNY $RAGE $SCREAM $ZEN"
 
 doublewidth="︶ ノ 益 ل͜"
 
 function configureActor() {
   case $1 in
+    $BEAR)
+      EYE="•"
+      MOUTH="ᴥ"
+      FLIP_ARM="ノ"
+      CHEEK_LEFT="ʕ"
+      CHEEK_RIGHT="ʔ"
+      ;;
     $BURNS)
       EYE="◉"
       MOUTH="Д"
