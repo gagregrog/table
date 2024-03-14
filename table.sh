@@ -72,7 +72,7 @@ function repeat() {
 }
 
 function empty() {
-  local source=$1
+  local source="$1"
   local length=$(strlen "$source")
   repeat " " "$length"
 }
@@ -410,15 +410,10 @@ function exitLeft() {
   local actor="$1"
   local y=${2:-"$middleY"}
   local waitFor=${3:-"$delay"}
-  local remaining=$(($(strlen "$actor") - 1))
-  while [ "$remaining" -ge "0" ]; do
+  for ((i = 0; i < "${#actor}"; i++)); do
     tput cup $y 0
-    if [ "$remaining" -eq "0" ]; then
-      echo " "
-    else
-      echo "${actor: ((0 - remaining))} "
-    fi
-    ((remaining--))
+    actor="${actor:1}$(empty "${actor: -1}")"
+    echo "$actor"
     sleep $waitFor
   done
 }
@@ -497,8 +492,7 @@ case $SCENE in
     scan
     ;;
   flip)
-    # flip
-    exitLeft "$faceLeft"
+    flip
     ;;
   *)
     echo Unknown scene: $SCENE
