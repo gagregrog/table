@@ -12,17 +12,17 @@ FLIP=FLIP
 HELP=HELP
 
 function setup() {
-  scene=${SCENE:-""}
-  tput civis # invisible cursor
-  tput smcup # save and hide screen
-  stty -echo # hide user input
+  if [[ $SCENE != $HELP ]]; then
+    tput civis # invisible cursor
+    tput smcup # save and hide screen
+    stty -echo # hide user input
+  fi
 }
 
 trap cleanup 1 2 3 6 EXIT 
 
 function cleanup() {
-  scene=${SCENE:-""}
-  if [[ $scene != $HELP ]]; then
+  if [[ $SCENE != $HELP ]]; then
     tput rmcup # replace screen
     tput cnorm # show cursor
     stty ${stty_orig} # enable normal keypress echo
@@ -82,6 +82,9 @@ function empty() {
   repeat " " "$length"
 }
 
+function extraDisplayChars() {
+  echo $(($(strlen "$1") - ${#1}))
+}
 
 #####################################
 # MATH UTILS
@@ -121,34 +124,40 @@ MOTION="︵"
 # ACTORS
 #####################################
 
-actors="burns diss jake pwny zen"
+BURNS=burns
+DISS=diss
+JAKE=jake
+PWNY=pwny
+ZEN=zen
+
+actors="$BURNS $DISS $JAKE $PWNY $ZEN"
 
 function configureActor() {
   case $1 in
-    burns)
+    $BURNS)
       EYE="◉"
       MOUTH="Д"
       FLIP_ARM="┛"
       MOTION="彡"
       ;;
-    diss)
+    $DISS)
       EYE="ಥ"
       MOUTH="_"
       CHEEK_LEFT="«"
       CHEEK_RIGHT="»"
       ;;
-    jake)
+    $JAKE)
       EYE="❍"
       MOUTH="ᴥ"
       FLIP_ARM="┛"
       MOTION="彡"
       ;;
-    pwny)
+    $PWNY)
       EYE="⊙"
       MOUTH="▂"
       FLIP_ARM="✖"
       ;;
-    zen)
+    $ZEN)
       EYE="︶"
       MOUTH="_"
       FLIP_ARM="╭∩╮"
@@ -283,10 +292,17 @@ delay=$(divide 1 $fps)
 #####################################
 
 function help() {
+  local tableLength=${TABLE_LENGTH:-1}
+  local defaultWidth=12
+  local extraDisplayWidth=$(extraDisplayChars "$flipTableRight")
+  local tableWidth=${#flipTableRight}
+  local extraChars=$((tableWidth - defaultWidth + tableLength))
+  local regularSpacer="52"
+  local spacer=$(repeat " " $((regularSpacer - extraChars - extraDisplayWidth)))
 cat << EOF
 
 ############################################################################
-# table.sh                                                     $flipTableRight
+# table.sh $spacer $flipTableRight
 ############################################################################
 
 Everybody's favorite table flipper, lightly animated
@@ -297,6 +313,7 @@ Options:
 
 Actors:
   --actor             [actor]         choose a specific actor
+
     actors: $(echo "$actors" | sed 's/ /, /g')
 
 Actor Options:
@@ -360,11 +377,11 @@ function exitRight() {
   local length=${#actor}
   local firstChar="${actor:0:1}"
   local squeegie=$(empty "$firstChar")
-  local extraDisplayChars=$(($(strlen "$actor") - ${#actor}))
+  local extraSpaces=$(extraDisplayChars "$actor")
   for ((i=0; i < $length; i++)); do
     actor="${actor:0:$((length - i - 1))}"
     local toDraw="$squeegie$actor"
-    tput cup $y $((cols - ${#toDraw} - $extraDisplayChars))
+    tput cup $y $((cols - ${#toDraw} - $extraSpaces))
     echo "$toDraw"
     sleep $waitFor
   done
