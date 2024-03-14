@@ -7,15 +7,18 @@
 set -euo pipefail
 stty_orig=$(stty -g) # capture the original keypress settings
 
-SCAN=SCAN
 FLIP=FLIP
+SCAN=SCAN
+CLEAR=CLEAR
 HELP=HELP
 
 function setup() {
   if [[ $SCENE != $HELP ]]; then
     tput civis # invisible cursor
-    tput smcup # save and hide screen
     stty -echo # hide user input
+    if [[ $SCENE != $CLEAR ]]; then
+      $tput smcup # save and hide screen
+    fi
   fi
 }
 
@@ -23,9 +26,11 @@ trap cleanup 1 2 3 6 EXIT
 
 function cleanup() {
   if [[ $SCENE != $HELP ]]; then
-    tput rmcup # replace screen
     tput cnorm # show cursor
     stty ${stty_orig} # enable normal keypress echo
+    if [[ $SCENE != $CLEAR ]]; then
+      tput rmcup # replace screen
+    fi
   fi
   exit
 }
@@ -237,6 +242,10 @@ while [[ $# -gt 0 ]]; do
       SCENE=$SCAN
       shift # past argument
       ;;
+    -c|--clear)
+      SCENE=$CLEAR
+      shift # past argument
+      ;;
     # uh-oh
     *)
       echo Unknown argument: $1
@@ -327,8 +336,9 @@ Actor Options:
 Table Options:
   -t, --table-length  [int]            change the length of the table
 
-Scene Options:
-  --scan                               run the scan scene
+Scenes:
+  -s, --scan                           like a printer...but not really
+  -c, --clear                          like shell clear, but better worse
 EOF
 }
 
@@ -509,7 +519,7 @@ case $SCENE in
   $HELP)
     help
     ;;
-  $SCAN)
+  $SCAN|$CLEAR)
     scan
     ;;
   $FLIP)
