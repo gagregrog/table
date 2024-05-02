@@ -58,17 +58,6 @@ function contains() {
   [[ "$LIST" =~ ($DELIMITER|^)$VALUE($DELIMITER|$) ]]
 }
 
-function strlen() {
-  local length=${#1}
-  for ((i = 0; i < ${#1}; i++)); do
-    local char="${1:i:1}"
-    if [[ "$doublewidth" == *"$char"* ]]; then
-      ((length++))
-    fi
-  done
-  echo $length
-}
-
 function repeat() {
   local char=$1
   local times=$2
@@ -81,13 +70,31 @@ function repeat() {
 }
 
 function empty() {
-  local source="$1"
-  local length=$(strlen "$source")
+  local length=$1
   repeat " " "$length"
 }
 
-function extraDisplayChars() {
-  echo $(($(strlen "$1") - ${#1}))
+function getColumn () {
+  local COL
+  local ROW
+  IFS=';' read -sdR -p $'\E[6n' ROW COL
+  echo "${COL}"
+}
+
+function putWord() {
+  tput cup 0 0
+  echo -n "$@"
+}
+
+function getWidth() {
+  local column=$(getColumn)
+  local width=$((column - 1))
+  echo $width
+}
+
+function delWord() {
+  tput cup 0 0
+  empty $1
 }
 
 #####################################
@@ -102,7 +109,9 @@ function divide() {
 
 function getCenterStart() {
   local item="$1"
-  local itemLength=$(strlen "$item")
+  putWord $item
+  local itemLength=$(getWidth)
+  delWord $itemLength
   local center=$((cols / 2))
   if [ $((center % 2)) -eq 1 ]; then
     ((center++))
@@ -138,8 +147,6 @@ SCREAM=scream
 ZEN=zen
 
 actors="$BEAR $BURNS $DISS $JAKE $PWNY $RAGE $SCREAM $ZEN"
-
-doublewidth="︶ ノ 益 ل͜"
 
 function configureActor() {
   case $1 in
@@ -284,9 +291,21 @@ done
 #####################################
 
 face="$CHEEK_LEFT$EYE$MOUTH$EYE$CHEEK_RIGHT"
-faceRight="$CHEEK_LEFT ${face:$(strlen "$CHEEK_LEFT")}"
+faceRight="$CHEEK_LEFT ${face:${#CHEEK_LEFT}}"
 faceLeft="${face%%$CHEEK_RIGHT*} $CHEEK_RIGHT"
 
+putWord $CHEEK_LEFT
+CHEEK_LEFT_WIDTH=$(getWidth)
+putWord $EYE
+EYE_WIDTH=$(getWidth)
+putWord "$MOUTH"
+MOUTH_WIDTH=$(getWidth)
+putWord "$CHEEK_RIGHT"
+CHEEK_RIGHT_WIDTH=$(getWidth)
+putWord "$faceRight"
+FACE_RIGHT_WIDTH=$(getWidth)
+putWord "$faceLeft"
+FACE_LEFT_WIDTH=$(getWidth)
 
 #####################################
 # TABLE
@@ -298,14 +317,24 @@ tableEndChar="┬"
 tableMiddleChar="─"
 tableMiddle=$(makeString "$tableMiddleChar" $tableLength)
 table="$tableEndChar$tableMiddle$tableEndChar"
+putWord "$table"
+TABLE_WIDTH=$(getWidth)
 
 flippedTableEndChar="┻"
 flippedTableMiddleChar="─"
 flippedTableMiddle=$(makeString "$flippedTableMiddleChar" $tableLength)
 tableFlipped="$flippedTableEndChar$flippedTableMiddle$flippedTableEndChar"
+putWord "$tableFlipped"
+FLIPPED_TABLE_WIDTH=$(getWidth)
 
-faceRightArms="$CHEEK_LEFT$FLIP_ARM${face:$(strlen "$CHEEK_LEFT")} $FLIP_ARM"
+putWord "$MOTION"
+MOTION_WIDTH=$(getWidth)
+faceRightArms="$CHEEK_LEFT$FLIP_ARM${face:${#CHEEK_LEFT}} $FLIP_ARM"
+putWord "$faceRightArms"
+FACE_RIGHT_ARMS_WIDTH=$(getWidth)
 flipTableRight="$faceRightArms$MOTION$tableFlipped"
+putWord "$flipTableRight"
+FLIP_TABLE_RIGHT_WIDTH=$(getWidth)
 
 
 #####################################
@@ -325,18 +354,15 @@ delay=$(divide 1 $fps)
 #####################################
 
 function help() {
-  local tableLength=${TABLE_LENGTH:-1}
-  local defaultWidth=12
-  local extraDisplayWidth=$(extraDisplayChars "$flipTableRight")
-  local tableWidth=${#flipTableRight}
-  local extraChars=$((tableWidth - defaultWidth + tableLength))
-  local regularSpacer="52"
-  local spacer=$(repeat " " $((regularSpacer - extraChars - extraDisplayWidth)))
-cat << EOF
+  local width=77
+  local line=$(repeat "#" $width)
+  local fname="# table.sh"
+  local spacer=$(repeat " " $((width - FLIP_TABLE_RIGHT_WIDTH - ${#fname})))
 
-############################################################################
-# table.sh $spacer $flipTableRight
-############################################################################
+cat << EOF
+$line
+$fname$spacer$flipTableRight
+$line
 
 Everybody's favorite table flipper, lightly animated
 
@@ -389,7 +415,10 @@ function moveRight() {
   local y=${4:-"$middleY"}
   local waitFor=${5:-"$delay"}
   local x="$from"
-  local toActual=$(($to - $(strlen "$actor")))
+  putWord $actor
+  local actorWidth=$(getWidth)
+  deleteWord $actorWidth
+  local toActual=$((to - actorWidth))
   local spacer=""
   while [ "$x" -le "$toActual" ]; do
     if [ "$x" -eq "0" ]; then
@@ -410,7 +439,7 @@ function exitRight() {
   local waitFor=${3:-"$delay"}
   local length=${#actor}
   local firstChar="${actor:0:1}"
-  local squeegie=$(empty "$firstChar")
+  local squeegie=$(empty "$CHEEK_LEFT_WIDTH")
   local extraSpaces=$(extraDisplayChars "$actor")
   for ((i=0; i < $length; i++)); do
     actor="${actor:0:$((length - i - 1))}"
@@ -438,7 +467,10 @@ function enterRight() {
   local length=${#actor}
   for ((i=1; i < $length; i++)); do
     local partial="${actor:0:$i}"
-    tput cup $y $((cols - $(strlen "$partial")))
+    putWord $partial
+    local partialWidth=$(getWidth)
+    deleteWord $partialWidth
+    tput cup $y $((cols - partialWidth)))
     echo "$partial"
     sleep $waitFor
   done
@@ -446,7 +478,10 @@ function enterRight() {
 
 function moveLeft() {
   local actor="$1"
-  local from=${2:-$((cols - $(strlen "$actor")))}
+  putWord $actor
+  local actorWidth=$(getWidth)
+  deleteWord $actorWidth
+  local from=${2:-$((cols - actorWidth))}
   local to=${3:-"0"}
   local y=${4:-"$middleY"}
   local waitFor=${5:-"$delay"}
@@ -466,7 +501,7 @@ function exitLeft() {
   local y=${2:-"$middleY"}
   local waitFor=${3:-"$delay"}
   local lastChar="${actor: -1}"
-  local squeegie=$(empty "$lastChar")
+  local squeegie=$(empty "$CHEEK_RIGHT_WIDTH")
   local length=${#actor}
   for ((i = 0; i < "$length"; i++)); do
     tput cup $y 0
@@ -481,7 +516,10 @@ function scanLeft() {
   local y=${2:-"$middleY"}
   local waitFor=${3:-"$delay"}
   enterRight "$actor" $y $waitFor
-  moveLeft "$actor" $((cols - $(strlen "$actor"))) 0 $y $waitFor
+  putWord $actor
+  local actorWidth=$(getWidth)
+  deleteWord $actorWidth
+  moveLeft "$actor" $((cols - actorWidth)) 0 $y $waitFor
   exitLeft "$actor" $y $waitFor
 }
 
@@ -507,13 +545,14 @@ function scan() {
 }
 
 function flip() {
-  local tableStart=$(getCenterStart $table)
+  getCenterStart $table
+  local tableStart=$(getCenterStart "$table")
   local eyeSleep=1
   tput cup $middleY $tableStart
   echo $table
   enterLeft "$faceRight"
   moveRight "$faceRight" 0 $tableStart
-  local actorStart=$((tableStart - $(strlen "$faceRight")))
+  local actorStart=$((tableStart -  FACE_RIGHT_WIDTH))
   sleep $eyeSleep
   tput cup $middleY $actorStart
   echo $faceLeft
@@ -524,11 +563,11 @@ function flip() {
   tput cup $middleY $actorStart
   echo $flipTableRight
   sleep 0.1
-  tput cup $middleY $((actorStart + $(strlen "$faceRightArms")))
-  empty "$MOTION"
+  tput cup $middleY $((actorStart + FACE_RIGHT_ARMS_WIDTH))
+  empty "$MOTION_WIDTH"
   sleep 0.5
   tput cup $middleY $actorStart
-  empty "$faceRightArms"
+  empty "$FACE_RIGHT_ARMS_WIDTH"
   moveLeft "$faceLeft" $actorStart 0
   exitLeft "$faceLeft"
 }
@@ -538,7 +577,7 @@ function flip() {
 # MAIN
 #####################################
 
-setup
+# setup
 case $SCENE in
   $HELP)
     help
